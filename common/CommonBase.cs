@@ -1,6 +1,10 @@
 using RabbitMQ.Client;
 
-abstract class CommonBase
+public interface ICommonBase
+{
+}
+
+public abstract class CommonBase : ICommonBase
 {
     #region Constructors
 

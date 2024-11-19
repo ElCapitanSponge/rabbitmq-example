@@ -2,7 +2,12 @@ using System.Text;
 using System.Text.Json;
 using RabbitMQ.Client;
 
-abstract class PublisherBase : CommonBase
+public interface IPublisherBase
+{
+	public void PublishMessage<T>(string queueName, T message);
+}
+
+public abstract class PublisherBase : CommonBase, IPublisherBase
 {
     #region Constructors
 
