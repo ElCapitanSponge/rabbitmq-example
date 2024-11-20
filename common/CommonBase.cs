@@ -1,5 +1,7 @@
 using RabbitMQ.Client;
 
+namespace RabbitmqExample.Common;
+
 public interface ICommonBase
 {
 }
@@ -58,6 +60,8 @@ public abstract class CommonBase : ICommonBase
 
     #region Properties
 
+	public List<string> AvailiableQueues => this.Queues.Keys.ToList();
+
     protected IChannel Channel
     {
         get => this._channel;
@@ -76,7 +80,7 @@ public abstract class CommonBase : ICommonBase
         private set => this._factory = value;
     }
 
-    protected abstract List<string> QueueNames { get; }
+    protected List<string> QueueNames { get; set; }
 
     protected Dictionary<string, QueueDeclareOk> Queues => this._queues;
 

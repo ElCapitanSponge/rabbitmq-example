@@ -2,23 +2,28 @@ using System.Text;
 using System.Text.Json;
 using RabbitMQ.Client;
 
+namespace RabbitmqExample.Common;
+
 public interface IPublisherBase
 {
-	public void PublishMessage<T>(string queueName, T message);
+	public void PublishMessage(string queueName, string message);
 }
 
 public abstract class PublisherBase : CommonBase, IPublisherBase
 {
     #region Constructors
 
-    public PublisherBase()
-        : base() { }
+    public PublisherBase(List<string> queueNames)
+        : base()
+	{
+		this.QueueNames = queueNames;
+	}
 
     #endregion // Constructors
 
     #region Methods
 
-    public async void PublishMessage<T>(string queueName, T message)
+    public async void PublishMessage(string queueName, string message)
     {
         if (!this.Queues.ContainsKey(queueName))
         {

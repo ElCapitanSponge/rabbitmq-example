@@ -2,9 +2,11 @@ using System.Text;
 using System.Text.Json;
 using RabbitMQ.Client.Events;
 
+namespace RabbitmqExample.Common;
+
 public interface IConsumerBase
 {
-    public AsyncEventingBasicConsumer InitialiseMessageConsumer<T>(string queueName, Action<T> action);
+    public void InitialiseMessageConsumer<T>(string queueName, Action<T> action);
 }
 
 public abstract class ConsumerBase : CommonBase, IConsumerBase
@@ -24,7 +26,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 
     #region Methods
 
-    public AsyncEventingBasicConsumer InitialiseMessageConsumer<T>(string queueName, Action<T> action)
+    public void InitialiseMessageConsumer<T>(string queueName, Action<T> action)
 	{
 		if (this.Consumers.ContainsKey(queueName))
 		{
@@ -37,7 +39,6 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 		}
 
 		AsyncEventingBasicConsumer consumer = new AsyncEventingBasicConsumer(this.Channel);
-		this.Consumers.Add(queueName, consumer);
 		consumer.ReceivedAsync += (sender, eventArgs) =>
 		{
 			byte[] body = eventArgs.Body.ToArray();
@@ -57,8 +58,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 
 			return Task.Run(() => action(message));
 		};
-
-		return consumer;
+		this.Consumers.Add(queueName, consumer);
 	}
 
     #endregion // Methods
