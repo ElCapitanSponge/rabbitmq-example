@@ -1,21 +1,30 @@
-﻿using RabbitmqExample.Common;
+﻿namespace RabbitmqExample.Consumers;
 
-namespace RabbitmqExample.Consumers
+class Program
 {
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            Console.WriteLine("Hello World!");
-        }
-    }
+    private static ManualResetEvent _quitEvent = new ManualResetEvent(false);
 
-    class Consumer : ConsumerBase
+    static void Main(string[] args)
     {
-        public Consumer()
-            : base()
+        RabbitmqExample.Consumers.Consumer consumer = new Consumer();
+
+        consumer.AvailiableQueues.ForEach(queueName =>
         {
-            this.QueueNames = new List<string> { "test" };
-        }
+            consumer.InitialiseMessageConsumer<string>(
+                queueName,
+                message =>
+                {
+                    Console.WriteLine($"{queueName.ToUpper()} Received message: {message}");
+                }
+            );
+        });
+
+        Console.CancelKeyPress += (sender, eventArgs) =>
+        {
+            eventArgs.Cancel = true;
+            _quitEvent.Set();
+        };
+
+        _quitEvent.WaitOne();
     }
 }

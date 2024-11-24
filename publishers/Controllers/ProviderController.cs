@@ -8,7 +8,9 @@ public class ProviderController
 {
     #region Constructors
 
-    public ProviderController() { }
+    public ProviderController() {
+        this.Publisher = new Publishers.Models.Publisher(new List<string> { "test" });
+	}
 
     #endregion // Constructors
 
@@ -46,19 +48,18 @@ public class ProviderController
 
     #region Requests
 
-	[HttpPost("PublishMessage")]
-	public void PublishMessage([FromBody] string queueName, [FromBody] string message)
-	{
-		this.CheckPublisherInitialised();
-		this.Publisher?.PublishMessage(queueName, message);
-	}
+    [HttpPost("PublishMessage")]
+    public void PublishMessage(string queueName, string message)
+    {
+        this.Publisher?.PublishMessage(queueName, message);
+    }
 
-	[HttpPost("SetQueues")]
-	public List<string> SetQueues([FromBody] List<string> queueNames)
-	{
-		this.Publisher = new Publishers.Models.Publisher(queueNames);
-		return this.Publisher.AvailiableQueues;
-	}
+    [HttpPost("SetQueues")]
+    public List<string> SetQueues(List<string> queueNames)
+    {
+        this.Publisher = new Publishers.Models.Publisher(queueNames);
+        return this.Publisher.AvailiableQueues;
+    }
 
     #endregion // Requests
 }

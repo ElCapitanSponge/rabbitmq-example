@@ -4,12 +4,10 @@ namespace RabbitmqExample.Publishers.Models;
 
 public class Publisher : PublisherBase
 {
-	#region Constructors
+    #region Constructors
 
-	public Publisher(List<string> queueNames)
-		: base(queueNames)
-	{
-	}
+    public Publisher(List<string> queueNames)
+        : base(queueNames) { }
 
-	#endregion // Constructors
+    #endregion // Constructors
 }

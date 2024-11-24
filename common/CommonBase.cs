@@ -2,9 +2,7 @@ using RabbitMQ.Client;
 
 namespace RabbitmqExample.Common;
 
-public interface ICommonBase
-{
-}
+public interface ICommonBase { }
 
 public abstract class CommonBase : ICommonBase
 {
@@ -27,6 +25,7 @@ public abstract class CommonBase : ICommonBase
     private IConnection _connection;
     private ConnectionFactory _factory;
     private Dictionary<string, QueueDeclareOk> _queues = new Dictionary<string, QueueDeclareOk>();
+    private List<string> _queueNames = new List<string>();
 
     #endregion // Fields
 
@@ -60,7 +59,7 @@ public abstract class CommonBase : ICommonBase
 
     #region Properties
 
-	public List<string> AvailiableQueues => this.Queues.Keys.ToList();
+    public List<string> AvailiableQueues => this.Queues.Keys.ToList();
 
     protected IChannel Channel
     {
@@ -80,7 +79,11 @@ public abstract class CommonBase : ICommonBase
         private set => this._factory = value;
     }
 
-    protected List<string> QueueNames { get; set; }
+    protected List<string> QueueNames
+    {
+        get => this._queueNames;
+        set => this._queueNames = value;
+    }
 
     protected Dictionary<string, QueueDeclareOk> Queues => this._queues;
 
