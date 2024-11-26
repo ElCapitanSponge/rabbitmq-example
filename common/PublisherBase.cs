@@ -17,6 +17,7 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
         : base()
 	{
 		this.QueueNames = queueNames;
+		this.InitializeQueue();
 	}
 
     #endregion // Constructors
