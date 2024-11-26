@@ -1,35 +1,38 @@
 ﻿using System.Text;
-using System.Text.Json;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
-namespace RabbitmqExample.Consumers;
+ManualResetEvent _quitEvent = new ManualResetEvent(false);
 
-class Program
+string queueName = "hello";
+var factory = new ConnectionFactory { HostName = "localhost" };
+using var connection = await factory.CreateConnectionAsync();
+using var channel = await connection.CreateChannelAsync();
+
+await channel.QueueDeclareAsync(
+    queue: queueName,
+    durable: false,
+    exclusive: false,
+    autoDelete: false,
+    arguments: null
+);
+
+Console.WriteLine($" [{queueName}] Waiting for messages.");
+
+var consumer = new AsyncEventingBasicConsumer(channel);
+consumer.ReceivedAsync += (model, ea) =>
 {
-    private static ManualResetEvent _quitEvent = new ManualResetEvent(false);
+    var body = ea.Body.ToArray();
+    var message = Encoding.UTF8.GetString(body);
+    Console.WriteLine($" [{queueName}] Received {message}");
+    return Task.CompletedTask;
+};
 
-    static void Main(string[] args)
-    {
-        RabbitmqExample.Consumers.Consumer consumer = new Consumer();
+await channel.BasicConsumeAsync(queueName, autoAck: true, consumer: consumer);
+Console.CancelKeyPress += (sender, eventArgs) =>
+{
+    eventArgs.Cancel = true;
+    _quitEvent.Set();
+};
 
-        consumer.AvailiableQueues.ForEach(queueName =>
-        {
-            consumer.InitialiseMessageConsumer(queueName);
-            consumer.Consumers[queueName].ReceivedAsync += (sender, eventArgs) =>
-            {
-                byte[] body = eventArgs.Body.ToArray();
-                string message = Encoding.UTF8.GetString(body);
-                var messageParsed = JsonSerializer.Deserialize<string>(message);
-                Console.WriteLine($" [{queueName}] Received {messageParsed}");
-                return Task.CompletedTask;
-            };
-        });
-
-        Console.CancelKeyPress += (sender, eventArgs) =>
-        {
-            eventArgs.Cancel = true;
-            _quitEvent.Set();
-        };
-
-        _quitEvent.WaitOne();
-    }
-}
+_quitEvent.WaitOne();

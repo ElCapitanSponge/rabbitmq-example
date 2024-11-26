@@ -1,4 +1,6 @@
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using RabbitMQ.Client;
 
 namespace RabbitmqExample.Publishers.Controllers;
 
@@ -6,60 +8,29 @@ namespace RabbitmqExample.Publishers.Controllers;
 [Route("api/[controller]")]
 public class ProviderController
 {
-    #region Constructors
+	#region Constructors
 
-    public ProviderController()
-    {
-        this.Publisher = new Publishers.Models.Publisher(new List<string> { "test" });
-    }
+	public ProviderController() { }
 
-    #endregion // Constructors
+	#endregion // Constructors
 
-    #region Fields
+	#region Requests
 
-    private RabbitmqExample.Publishers.Models.Publisher? _publisher;
+	[HttpPost("PublishMessage")]
+	public async Task<string> PublishMessage(string queueName, string message)
+	{
+		var factory = new ConnectionFactory { HostName = "localhost" };
+		using var connection = await factory.CreateConnectionAsync();
+		using var channel = await connection.CreateChannelAsync();
 
-    #endregion // Fields
+		await channel.QueueDeclareAsync(queue: queueName, durable: false, exclusive: false, autoDelete: false,
+			arguments: null);
 
-    #region Methods
+		var body = Encoding.UTF8.GetBytes(message);
 
-    private void CheckPublisherInitialised(bool isSetQueue = false)
-    {
-        if (!this.IsPublisherInitialised && !isSetQueue)
-        {
-            throw new InvalidOperationException(
-                "Publisher is not initialised. Please Specify the Queue Names"
-            );
-        }
-    }
+		await channel.BasicPublishAsync(exchange: string.Empty, routingKey: queueName, body: body);
+		return $" [{queueName}] Sent {message}";
+	}
 
-    #endregion // Methods
-
-    #region Properties
-
-    private RabbitmqExample.Publishers.Models.Publisher? Publisher
-    {
-        get => this._publisher;
-        set => this._publisher = value;
-    }
-
-    private bool IsPublisherInitialised => this._publisher != null;
-
-    #endregion // Properties
-
-    #region Requests
-
-    [HttpPost("PublishMessage")]
-    public void PublishMessage(string queueName, string message)
-    {
-        if (this.Publisher == null)
-        {
-            throw new InvalidOperationException(
-                "Publisher is not initialised. Please Specify the Queue Names"
-            );
-        }
-        this.Publisher?.PublishMessage(queueName, message);
-    }
-
-    #endregion // Requests
+	#endregion // Requests
 }
