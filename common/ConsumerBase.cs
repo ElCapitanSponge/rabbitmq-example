@@ -1,12 +1,11 @@
-using System.Text;
-using System.Text.Json;
 using RabbitMQ.Client.Events;
 
 namespace RabbitmqExample.Common;
 
 public interface IConsumerBase
 {
-    public void InitialiseMessageConsumer<T>(string queueName, Action<T> action);
+	public void InitialiseMessageConsumer(string queueName);
+	public Dictionary<string, AsyncEventingBasicConsumer> Consumers { get; }
 }
 
 public abstract class ConsumerBase : CommonBase, IConsumerBase
@@ -26,7 +25,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 
     #region Methods
 
-    public void InitialiseMessageConsumer<T>(string queueName, Action<T> action)
+    public void InitialiseMessageConsumer(string queueName)
 	{
 		if (this.Consumers.ContainsKey(queueName))
 		{
@@ -39,25 +38,6 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 		}
 
 		AsyncEventingBasicConsumer consumer = new AsyncEventingBasicConsumer(this.Channel);
-		consumer.ReceivedAsync += (sender, eventArgs) =>
-		{
-			byte[] body = eventArgs.Body.ToArray();
-			string messageJson = Encoding.UTF8.GetString(body);
-
-			if (string.IsNullOrWhiteSpace(messageJson))
-			{
-				throw new InvalidOperationException("Message is empty.");
-			}
-
-			T? message = JsonSerializer.Deserialize<T>(messageJson);
-
-			if (message == null)
-			{
-				throw new InvalidOperationException("Message is null.");
-			}
-
-			return Task.Run(() => action(message));
-		};
 		this.Consumers.Add(queueName, consumer);
 	}
 
@@ -65,7 +45,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 
     #region Properties
 
-	protected Dictionary<string, AsyncEventingBasicConsumer> Consumers => this._consumers;
+	public Dictionary<string, AsyncEventingBasicConsumer> Consumers => this._consumers;
 
     #endregion // Properties
 }

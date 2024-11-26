@@ -7,7 +7,7 @@ class Consumer : ConsumerBase
     public Consumer()
         : base()
     {
-        this.QueueNames = new List<string> { "test" };
+        this.QueueNames = new List<string> { "hello" };
         this.InitializeQueue();
     }
 }

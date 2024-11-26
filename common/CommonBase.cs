@@ -42,7 +42,7 @@ public abstract class CommonBase : ICommonBase
 
             QueueDeclareOk? queue = await this.Channel.QueueDeclareAsync(
                 queue: queueName,
-                durable: true,
+                durable: false,
                 exclusive: false,
                 autoDelete: false,
                 arguments: null

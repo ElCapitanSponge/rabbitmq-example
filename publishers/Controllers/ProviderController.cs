@@ -8,9 +8,10 @@ public class ProviderController
 {
     #region Constructors
 
-    public ProviderController() {
+    public ProviderController()
+    {
         this.Publisher = new Publishers.Models.Publisher(new List<string> { "test" });
-	}
+    }
 
     #endregion // Constructors
 
@@ -51,14 +52,13 @@ public class ProviderController
     [HttpPost("PublishMessage")]
     public void PublishMessage(string queueName, string message)
     {
+        if (this.Publisher == null)
+        {
+            throw new InvalidOperationException(
+                "Publisher is not initialised. Please Specify the Queue Names"
+            );
+        }
         this.Publisher?.PublishMessage(queueName, message);
-    }
-
-    [HttpPost("SetQueues")]
-    public List<string> SetQueues(List<string> queueNames)
-    {
-        this.Publisher = new Publishers.Models.Publisher(queueNames);
-        return this.Publisher.AvailiableQueues;
     }
 
     #endregion // Requests

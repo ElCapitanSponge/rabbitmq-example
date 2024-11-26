@@ -18,7 +18,7 @@ if (app.Environment.IsDevelopment())
 	{
 		options
 			.WithTitle("RabbitMQ Example Publishers")
-			.WithTheme(ScalarTheme.Moon)
+			.WithTheme(ScalarTheme.Kepler)
 			.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
 	});
 }
