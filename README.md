@@ -21,3 +21,19 @@ For development reference the applicable information per project.
 ### Publishers
 
  The publisher documentation [`publisher`](publishers/README.md)
+
+## Rabbit MQ instance
+
+For this example the RabbitMQ docker container was used.
+
+The following command can be used to start the RabbitMQ container:
+
+```bash
+# latest RabbitMQ 4.0.x
+docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:4.0-management
+```
+
+**References:**
+
+- [RabbitMQ Docker](https://hub.docker.com/_/rabbitmq)
+- [RabbitMQ Install](https://www.rabbitmq.com/docs/download)
