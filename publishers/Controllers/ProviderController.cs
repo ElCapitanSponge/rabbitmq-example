@@ -21,13 +21,6 @@ public class ProviderController
 
     #region Requests
 
-    [HttpGet("LoadQueues")]
-    public HashSet<string> LoadQueues()
-    {
-        this._publisher.RefreshQueues().Wait();
-        return this._publisher.Queues;
-    }
-
     [HttpPost("PublishMessageSimple")]
     public string PublishMessage(string queueName, string message)
     {

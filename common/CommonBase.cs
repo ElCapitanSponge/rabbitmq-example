@@ -31,6 +31,13 @@ public abstract class CommonBase : ICommonBase
 
     #region Methods
 
+	public bool CreateQueue(string queueName)
+	{
+		this.DeclareQueueIfNotDeclared(queueName);
+		bool exists = this.Queues.Contains(queueName);
+		return exists;
+	}
+
     protected void DeclareQueueIfNotDeclared(string queueName)
     {
         if (!this.Queues.Contains(queueName))
@@ -84,6 +91,17 @@ public abstract class CommonBase : ICommonBase
         this._queues.Clear();
         await this.LoadQueues();
     }
+
+	public async Task RemoveAllQueues()
+	{
+		await this.LoadQueues();
+		foreach (var queue in this.Queues)
+		{
+			await this.Channel.QueueDeleteAsync(queue);
+		}
+		this.Queues.Clear();
+		await this.LoadQueues();
+	}
 
     #endregion // Methods
 
