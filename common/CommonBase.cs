@@ -5,7 +5,13 @@ using RabbitMQ.Client;
 
 namespace RabbitmqExample.Common;
 
-public interface ICommonBase { }
+public interface ICommonBase {
+	public bool CreateQueue(string queueName);
+	public void Dispose();
+	public Task RefreshQueues();
+	public Task RemoveAllQueues();
+	public HashSet<string> Queues { get; }
+}
 
 public abstract class CommonBase : ICommonBase
 {
@@ -114,36 +120,6 @@ public abstract class CommonBase : ICommonBase
     protected IConnection Connection => this._connection;
     protected abstract string HostName { get; }
     public HashSet<string> Queues => this._queues;
-
-    #endregion // Properties
-}
-
-public interface IQueueInfo
-{
-    public string? Name { get; set; }
-}
-
-public class QueueInfo : IQueueInfo
-{
-    #region Properties
-
-    public string? Name { get; set; }
-
-    #endregion // Properties
-}
-
-public interface IStructuredMessage
-{
-    public string MessageType { get; set; }
-    public string Message { get; set; }
-}
-
-public class StructuredMessage : IStructuredMessage
-{
-    #region Properties
-
-    public string MessageType { get; set; }
-    public string Message { get; set; }
 
     #endregion // Properties
 }

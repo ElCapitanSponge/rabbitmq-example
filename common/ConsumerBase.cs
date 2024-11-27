@@ -5,7 +5,10 @@ using RabbitMQ.Client.Events;
 
 namespace RabbitmqExample.Common;
 
-public interface IConsumerBase { }
+public interface IConsumerBase {
+	public void StartConsuming();
+	public List<string> SpecifiedQueues { get; }
+}
 
 public abstract class ConsumerBase : CommonBase, IConsumerBase
 {

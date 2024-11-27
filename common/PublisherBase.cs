@@ -4,7 +4,10 @@ using RabbitMQ.Client;
 
 namespace RabbitmqExample.Common;
 
-public interface IPublisherBase { }
+public interface IPublisherBase {
+	public void SendMessage(IEnumerable<string> queueNames, string message);
+	public void SendMessage<T>(IEnumerable<string> queueNames, T message);
+}
 
 public abstract class PublisherBase : CommonBase, IPublisherBase
 {
