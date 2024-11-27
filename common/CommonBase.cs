@@ -113,3 +113,19 @@ public class QueueInfo : IQueueInfo
 
     #endregion // Properties
 }
+
+public interface IStructuredMessage
+{
+    public string MessageType { get; set; }
+    public string Message { get; set; }
+}
+
+public class StructuredMessage : IStructuredMessage
+{
+    #region Properties
+
+    public string MessageType { get; set; }
+    public string Message { get; set; }
+
+    #endregion // Properties
+}

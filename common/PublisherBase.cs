@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using RabbitMQ.Client;
 
 namespace RabbitmqExample.Common;
@@ -18,9 +19,21 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
 
     public void SendMessage(IEnumerable<string> queueNames, string message)
     {
-        var body = Encoding.UTF8.GetBytes(message);
+        this.SendMessage<string>(queueNames, message);
+    }
 
-        foreach (var queueName in queueNames)
+    public void SendMessage<T>(IEnumerable<string> queueNames, T message)
+    {
+        string serialisedMessage = JsonSerializer.Serialize(message);
+        StructuredMessage structuredMessage = new StructuredMessage
+        {
+            MessageType = typeof(T).FullName,
+            Message = serialisedMessage,
+        };
+
+        byte[] body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(structuredMessage));
+
+        foreach (string queueName in queueNames)
         {
             this.DeclareQueueIfNotDeclared(queueName);
             this.Channel.BasicPublishAsync(
@@ -29,7 +42,10 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
                 body: body
             );
 
-            Console.WriteLine($" [{queueName}] Sent {message}");
+            Console.WriteLine($" [{queueName}] Sent structured message: {message}");
+            Console.WriteLine(
+                $" [{queueName}] Sent message: {structuredMessage.MessageType} ~ {structuredMessage.Message}"
+            );
         }
     }
 

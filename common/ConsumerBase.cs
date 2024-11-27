@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -28,15 +29,38 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 
     public void StartConsuming()
     {
-        foreach (var queueName in this.SpecifiedQueues)
+        foreach (string queueName in this.SpecifiedQueues)
         {
             this.DeclareQueueIfNotDeclared(queueName);
-            var consumer = new AsyncEventingBasicConsumer(this.Channel);
+            AsyncEventingBasicConsumer consumer = new AsyncEventingBasicConsumer(this.Channel);
             consumer.ReceivedAsync += (model, ea) =>
             {
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-                Console.WriteLine($" [{queueName}] Received {message}");
+                byte[] body = ea.Body.ToArray();
+                string message = Encoding.UTF8.GetString(body);
+
+                StructuredMessage? decodedBaseMessage =
+                    JsonSerializer.Deserialize<StructuredMessage>(message);
+
+                if (decodedBaseMessage == null)
+                {
+                    Console.WriteLine($" [{queueName}] Could not deserialise message: {message}");
+                    return Task.CompletedTask;
+                }
+
+                object? deserializedMessage = JsonSerializer.Deserialize(
+                    decodedBaseMessage.Message,
+                    Type.GetType(decodedBaseMessage.MessageType)
+                );
+
+                if (deserializedMessage == null)
+                {
+                    Console.WriteLine(
+                        $" [{queueName}] Could not deserialise message: {decodedBaseMessage.Message}"
+                    );
+                    return Task.CompletedTask;
+                }
+
+                Console.WriteLine($" [{queueName}] Received {deserializedMessage.ToString()}");
                 return Task.CompletedTask;
             };
 

@@ -28,11 +28,11 @@ public class ProviderController
         return this._publisher.Queues;
     }
 
-    [HttpPost("PublishMessage")]
+    [HttpPost("PublishMessageSimple")]
     public string PublishMessage(string queueName, string message)
     {
         this._publisher.SendMessage(new List<string> { queueName }, message);
-        return "Message published";
+        return "Simple Message Published";
     }
 
     #endregion // Requests
