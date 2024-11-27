@@ -6,8 +6,14 @@ public class Publisher : PublisherBase
 {
     #region Constructors
 
-    public Publisher(List<string> queueNames)
-        : base(queueNames) { }
+    public Publisher()
+        : base() { }
 
     #endregion // Constructors
+
+    #region Properties
+
+	protected override string HostName => "localhost";
+
+    #endregion // Properties
 }

@@ -1,6 +1,4 @@
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
-using RabbitMQ.Client;
 
 namespace RabbitmqExample.Publishers.Controllers;
 
@@ -8,29 +6,26 @@ namespace RabbitmqExample.Publishers.Controllers;
 [Route("api/[controller]")]
 public class ProviderController
 {
-	#region Constructors
+    #region Constructors
 
-	public ProviderController() { }
+    public ProviderController() { }
 
-	#endregion // Constructors
+    #endregion // Constructors
 
-	#region Requests
+    #region Fields
 
-	[HttpPost("PublishMessage")]
-	public async Task<string> PublishMessage(string queueName, string message)
-	{
-		var factory = new ConnectionFactory { HostName = "localhost" };
-		using var connection = await factory.CreateConnectionAsync();
-		using var channel = await connection.CreateChannelAsync();
+	private RabbitmqExample.Publishers.Models.Publisher _publisher = new RabbitmqExample.Publishers.Models.Publisher();
 
-		await channel.QueueDeclareAsync(queue: queueName, durable: false, exclusive: false, autoDelete: false,
-			arguments: null);
+    #endregion // Fields
 
-		var body = Encoding.UTF8.GetBytes(message);
+    #region Requests
 
-		await channel.BasicPublishAsync(exchange: string.Empty, routingKey: queueName, body: body);
-		return $" [{queueName}] Sent {message}";
-	}
+    [HttpPost("PublishMessage")]
+    public string PublishMessage(string queueName, string message)
+    {
+		this._publisher.SendMessage(new List<string> { queueName }, message);
+		return "Message published";
+    }
 
-	#endregion // Requests
+    #endregion // Requests
 }

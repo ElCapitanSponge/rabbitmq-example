@@ -9,7 +9,7 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
 {
     #region Constructors
 
-    public PublisherBase(List<string> queueNames)
+    public PublisherBase()
         : base() { }
 
     #endregion // Constructors
