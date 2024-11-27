@@ -56,20 +56,22 @@ public abstract class CommonBase : ICommonBase
     private async Task LoadQueues()
     {
         var httpClient = new HttpClient();
-        var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes("guest:guest"));
+        var credentials = Convert.ToBase64String(
+            Encoding.ASCII.GetBytes($"{this.AdminUser}:{this.AdminPassword}")
+        );
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Basic",
             credentials
         );
 
         var queues = await httpClient.GetFromJsonAsync<List<QueueInfo>>(
-            $"http://{this.HostName}:15672/api/queues"
+            $"http://{this.HostName}:{this.AdminPort}/api/queues"
         );
         if (queues != null)
         {
             foreach (var queue in queues)
             {
-                if (!this.Queues.Contains(queue.Name))
+                if (queue.Name != null && !this.Queues.Contains(queue.Name))
                 {
                     this._queues.Add(queue.Name);
                 }
@@ -87,6 +89,9 @@ public abstract class CommonBase : ICommonBase
 
     #region Properties
 
+    protected abstract string AdminPassword { get; }
+    protected abstract string AdminPort { get; }
+    protected abstract string AdminUser { get; }
     protected IChannel Channel => this._channel;
     protected IConnection Connection => this._connection;
     protected abstract string HostName { get; }
@@ -97,14 +102,14 @@ public abstract class CommonBase : ICommonBase
 
 public interface IQueueInfo
 {
-    public string Name { get; set; }
+    public string? Name { get; set; }
 }
 
 public class QueueInfo : IQueueInfo
 {
     #region Properties
 
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     #endregion // Properties
 }

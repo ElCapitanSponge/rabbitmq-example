@@ -13,6 +13,9 @@ public class Consumer : ConsumerBase
 
     #region Properties
 
+	protected override string AdminPassword => "guest";
+    protected override string AdminPort => "15672";
+    protected override string AdminUser => "guest";
     protected override string HostName => "localhost";
 
     #endregion // Properties
