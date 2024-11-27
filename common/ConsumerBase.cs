@@ -1,51 +1,56 @@
+using System.Text;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
 namespace RabbitmqExample.Common;
 
 public interface IConsumerBase
 {
-	public void InitialiseMessageConsumer(string queueName);
-	public Dictionary<string, AsyncEventingBasicConsumer> Consumers { get; }
 }
 
 public abstract class ConsumerBase : CommonBase, IConsumerBase
 {
     #region Constructors
 
-    public ConsumerBase()
-        : base() { }
+    public ConsumerBase(List<string> queuesNames)
+        : base()
+	{
+		this._specifiedQueues = queuesNames;
+	}
 
     #endregion // Constructors
 
     #region Fields
 
-	private Dictionary<string, AsyncEventingBasicConsumer> _consumers = new Dictionary<string, AsyncEventingBasicConsumer>();
+	private List<string> _specifiedQueues;
 
     #endregion // Fields
 
     #region Methods
 
-    public void InitialiseMessageConsumer(string queueName)
+	public void StartConsuming()
 	{
-		if (this.Consumers.ContainsKey(queueName))
+		foreach (var queueName in this.SpecifiedQueues)
 		{
-			throw new InvalidOperationException($"Consumer for queue {queueName} already exists.");
-		}
+			this.DeclareQueueIfNotDeclared(queueName);
+			var consumer = new AsyncEventingBasicConsumer(this.Channel);
+			consumer.ReceivedAsync += (model, ea) =>
+			{
+				var body = ea.Body.ToArray();
+				var message = Encoding.UTF8.GetString(body);
+				Console.WriteLine($" [{queueName}] Received {message}");
+				return Task.CompletedTask;
+			};
 
-		if (!this.Queues.ContainsKey(queueName))
-		{
-			throw new InvalidOperationException($"Queue {queueName} does not exist.");
+			this.Channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer).Wait();
 		}
-
-		AsyncEventingBasicConsumer consumer = new AsyncEventingBasicConsumer(this.Channel);
-		this.Consumers.Add(queueName, consumer);
 	}
 
     #endregion // Methods
 
     #region Properties
 
-	public Dictionary<string, AsyncEventingBasicConsumer> Consumers => this._consumers;
+	public List<string> SpecifiedQueues => this._specifiedQueues;
 
     #endregion // Properties
 }

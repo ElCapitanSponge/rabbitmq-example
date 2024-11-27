@@ -1,3 +1,6 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text;
 using RabbitMQ.Client;
 
 namespace RabbitmqExample.Common;
@@ -10,11 +13,10 @@ public abstract class CommonBase : ICommonBase
 
     public CommonBase()
     {
-        this._factory = new ConnectionFactory { HostName = "localhost" };
-        this._connection = this.Factory.CreateConnectionAsync().Result;
+        var factory = new ConnectionFactory { HostName = this.HostName };
+        this._connection = factory.CreateConnectionAsync().Result;
         this._channel = this.Connection.CreateChannelAsync().Result;
-
-        this.InitializeQueue();
+        this.LoadQueues().Wait();
     }
 
     #endregion // Constructors
@@ -23,69 +25,76 @@ public abstract class CommonBase : ICommonBase
 
     private IChannel _channel;
     private IConnection _connection;
-    private ConnectionFactory _factory;
-    private Dictionary<string, QueueDeclareOk> _queues = new Dictionary<string, QueueDeclareOk>();
-    private List<string> _queueNames = new List<string>();
+    private readonly HashSet<string> _queues = new HashSet<string>();
 
     #endregion // Fields
 
     #region Methods
 
-    protected void InitializeQueue()
+    protected void DeclareQueueIfNotDeclared(string queueName)
     {
-        this.QueueNames.ForEach(async queueName =>
+        if (!this.Queues.Contains(queueName))
         {
-            if (this.Queues.ContainsKey(queueName))
-            {
-                return;
-            }
-
-            QueueDeclareOk? queue = await this.Channel.QueueDeclareAsync(
+            this.Channel.QueueDeclareAsync(
                 queue: queueName,
                 durable: false,
                 exclusive: false,
                 autoDelete: false,
                 arguments: null
-            );
+            ).Wait();
+            this.Queues.Add(queueName);
+        }
+    }
 
-            if (queue != null)
+    public void Dispose()
+    {
+        this.Channel?.CloseAsync();
+        this.Connection?.CloseAsync();
+    }
+
+    private async Task LoadQueues()
+    {
+        var httpClient = new HttpClient();
+        var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes("guest:guest"));
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Basic",
+            credentials
+        );
+
+        var queues = await httpClient.GetFromJsonAsync<List<QueueInfo>>(
+            $"http://{this.HostName}:15672/api/queues"
+        );
+        if (queues != null)
+        {
+            foreach (var queue in queues)
             {
-                this.Queues.Add(queueName, queue);
+                this._queues.Add(queue.Name);
             }
-        });
+        }
     }
 
     #endregion // Methods
 
     #region Properties
 
-    public List<string> AvailiableQueues => this.Queues.Keys.ToList();
+    protected IChannel Channel => this._channel;
+    protected IConnection Connection => this._connection;
+    protected abstract string HostName { get; }
+    protected HashSet<string> Queues => this._queues;
 
-    protected IChannel Channel
-    {
-        get => this._channel;
-        private set => this._channel = value;
-    }
+    #endregion // Properties
+}
 
-    protected IConnection Connection
-    {
-        get => this._connection;
-        private set => this._connection = value;
-    }
+public interface IQueueInfo
+{
+    public string Name { get; set; }
+}
 
-    protected ConnectionFactory Factory
-    {
-        get => this._factory;
-        private set => this._factory = value;
-    }
+public class QueueInfo : IQueueInfo
+{
+    #region Properties
 
-    protected List<string> QueueNames
-    {
-        get => this._queueNames;
-        set => this._queueNames = value;
-    }
-
-    protected Dictionary<string, QueueDeclareOk> Queues => this._queues;
+    public string Name { get; set; }
 
     #endregion // Properties
 }
