@@ -13,7 +13,7 @@ public class Publisher : PublisherBase
 
     #region Properties
 
-	protected override string HostName => "localhost";
+    protected override string HostName => "localhost";
 
     #endregion // Properties
 }

@@ -36,12 +36,13 @@ public abstract class CommonBase : ICommonBase
         if (!this.Queues.Contains(queueName))
         {
             this.Channel.QueueDeclareAsync(
-                queue: queueName,
-                durable: false,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null
-            ).Wait();
+                    queue: queueName,
+                    durable: false,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null
+                )
+                .Wait();
             this.Queues.Add(queueName);
         }
     }
@@ -68,19 +69,19 @@ public abstract class CommonBase : ICommonBase
         {
             foreach (var queue in queues)
             {
-				if (!this.Queues.Contains(queue.Name))
-				{
-					this._queues.Add(queue.Name);
-				}
+                if (!this.Queues.Contains(queue.Name))
+                {
+                    this._queues.Add(queue.Name);
+                }
             }
         }
     }
 
-	public async Task RefreshQueues()
-	{
-		this._queues.Clear();
-		await this.LoadQueues();
-	}
+    public async Task RefreshQueues()
+    {
+        this._queues.Clear();
+        await this.LoadQueues();
+    }
 
     #endregion // Methods
 
