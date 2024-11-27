@@ -68,10 +68,19 @@ public abstract class CommonBase : ICommonBase
         {
             foreach (var queue in queues)
             {
-                this._queues.Add(queue.Name);
+				if (!this.Queues.Contains(queue.Name))
+				{
+					this._queues.Add(queue.Name);
+				}
             }
         }
     }
+
+	public async Task RefreshQueues()
+	{
+		this._queues.Clear();
+		await this.LoadQueues();
+	}
 
     #endregion // Methods
 
@@ -80,7 +89,7 @@ public abstract class CommonBase : ICommonBase
     protected IChannel Channel => this._channel;
     protected IConnection Connection => this._connection;
     protected abstract string HostName { get; }
-    protected HashSet<string> Queues => this._queues;
+    public HashSet<string> Queues => this._queues;
 
     #endregion // Properties
 }

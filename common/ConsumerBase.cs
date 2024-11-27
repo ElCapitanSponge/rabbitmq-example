@@ -43,6 +43,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 			};
 
 			this.Channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer).Wait();
+			Console.WriteLine($" [{queueName}] Waiting for messages.");
 		}
 	}
 
