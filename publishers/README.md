@@ -13,5 +13,5 @@ dotnet watch
 To view the api docs (port number might be different)
 
 ```bash
-http://localhost:5296/scalar/v1
+http://localhost:5296/swagger
 ```
