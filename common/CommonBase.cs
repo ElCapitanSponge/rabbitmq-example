@@ -24,6 +24,7 @@ public abstract class CommonBase : ICommonBase
         this._connection = factory.CreateConnectionAsync().Result;
         this._channel = this.Connection.CreateChannelAsync().Result;
         this.LoadQueues().Wait();
+        this.CreateDeadLetterExchange();
     }
 
     #endregion // Constructors
