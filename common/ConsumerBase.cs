@@ -5,9 +5,10 @@ using RabbitMQ.Client.Events;
 
 namespace RabbitmqExample.Common;
 
-public interface IConsumerBase {
-	public void StartConsuming();
-	public List<string> SpecifiedQueues { get; }
+public interface IConsumerBase
+{
+    public void StartConsuming();
+    public List<string> SpecifiedQueues { get; }
 }
 
 public abstract class ConsumerBase : CommonBase, IConsumerBase
@@ -41,29 +42,43 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
                 byte[] body = ea.Body.ToArray();
                 string message = Encoding.UTF8.GetString(body);
 
-                StructuredMessage? decodedBaseMessage =
-                    JsonSerializer.Deserialize<StructuredMessage>(message);
-
-                if (decodedBaseMessage == null)
+                try
                 {
-                    Console.WriteLine($" [{queueName}] Could not deserialise message: {message}");
-                    return Task.CompletedTask;
-                }
+                    StructuredMessage? decodedBaseMessage =
+                        JsonSerializer.Deserialize<StructuredMessage>(message);
 
-                object? deserializedMessage = JsonSerializer.Deserialize(
-                    decodedBaseMessage.Message,
-                    Type.GetType(decodedBaseMessage.MessageType)
-                );
+                    if (decodedBaseMessage == null)
+                    {
+                        Console.WriteLine(
+                            $" [{queueName}] Could not deserialise message: {message}"
+                        );
+                        return Task.CompletedTask;
+                    }
 
-                if (deserializedMessage == null)
-                {
-                    Console.WriteLine(
-                        $" [{queueName}] Could not deserialise message: {decodedBaseMessage.Message}"
+                    object? deserializedMessage = JsonSerializer.Deserialize(
+                        decodedBaseMessage.Message,
+                        Type.GetType(decodedBaseMessage.MessageType)
                     );
-                    return Task.CompletedTask;
-                }
 
-                Console.WriteLine($" [{queueName}] Received {deserializedMessage.ToString()}");
+                    if (deserializedMessage == null)
+                    {
+                        Console.WriteLine(
+                            $" [{queueName}] Could not deserialise message: {decodedBaseMessage.Message}"
+                        );
+                        return Task.CompletedTask;
+                    }
+
+                    Console.WriteLine($" [{queueName}] Received {deserializedMessage.ToString()}");
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($" [{queueName}] Error: {ex.Message}");
+                    this.Channel.BasicNackAsync(
+                        deliveryTag: ea.DeliveryTag,
+                        multiple: false,
+                        requeue: false
+                    );
+                }
                 return Task.CompletedTask;
             };
 

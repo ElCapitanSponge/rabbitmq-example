@@ -4,9 +4,10 @@ using RabbitMQ.Client;
 
 namespace RabbitmqExample.Common;
 
-public interface IPublisherBase {
-	public void SendMessage(IEnumerable<string> queueNames, string message);
-	public void SendMessage<T>(IEnumerable<string> queueNames, T message);
+public interface IPublisherBase
+{
+    public void SendMessage(IEnumerable<string> queueNames, string message);
+    public void SendMessage<T>(IEnumerable<string> queueNames, T message);
 }
 
 public abstract class PublisherBase : CommonBase, IPublisherBase
@@ -30,7 +31,7 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
         string serialisedMessage = JsonSerializer.Serialize(message);
         StructuredMessage structuredMessage = new StructuredMessage
         {
-            MessageType = typeof(T).FullName,
+            MessageType = typeof(T).FullName ?? string.Empty,
             Message = serialisedMessage,
         };
 

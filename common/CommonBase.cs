@@ -5,12 +5,13 @@ using RabbitMQ.Client;
 
 namespace RabbitmqExample.Common;
 
-public interface ICommonBase {
-	public bool CreateQueue(string queueName);
-	public void Dispose();
-	public Task RefreshQueues();
-	public Task RemoveAllQueues();
-	public HashSet<string> Queues { get; }
+public interface ICommonBase
+{
+    public bool CreateQueue(string queueName);
+    public void Dispose();
+    public Task RefreshQueues();
+    public Task RemoveAllQueues();
+    public HashSet<KeyValuePair<string, bool>> Queues { get; }
 }
 
 public abstract class CommonBase : ICommonBase
@@ -31,32 +32,59 @@ public abstract class CommonBase : ICommonBase
 
     private IChannel _channel;
     private IConnection _connection;
-    private readonly HashSet<string> _queues = new HashSet<string>();
+    private readonly HashSet<KeyValuePair<string, bool>> _queues =
+        new HashSet<KeyValuePair<string, bool>>();
 
     #endregion // Fields
 
     #region Methods
 
-	public bool CreateQueue(string queueName)
-	{
-		this.DeclareQueueIfNotDeclared(queueName);
-		bool exists = this.Queues.Contains(queueName);
-		return exists;
-	}
-
-    protected void DeclareQueueIfNotDeclared(string queueName)
+    public bool CreateQueue(string queueName)
     {
-        if (!this.Queues.Contains(queueName))
+        this.DeclareQueueIfNotDeclared(queueName);
+        bool exists = this.IsInQueue(queueName);
+        return exists;
+    }
+
+    protected void DeclareQueueIfNotDeclared(string queueName, bool isDeadLetter = false)
+    {
+        if (!this.IsInQueue(queueName))
         {
+            if (isDeadLetter)
+            {
+                this.Channel.ExchangeDeclareAsync(
+                        exchange: $"exchange-{queueName}",
+                        type: ExchangeType.Direct
+                    )
+                    .Wait();
+            }
+            IDictionary<string, object?>? args = null;
+            if (!isDeadLetter)
+            {
+                args = new Dictionary<string, object?>
+                {
+                    { "x-dead-letter-exchange", $"exchange-{this.DeadLetterExchange}" },
+                    { "x-dead-letter-routing-key", $"{this.DeadLetterExchange}-key" },
+                };
+            }
             this.Channel.QueueDeclareAsync(
                     queue: queueName,
                     durable: false,
                     exclusive: false,
                     autoDelete: false,
-                    arguments: null
+                    arguments: args
                 )
                 .Wait();
-            this.Queues.Add(queueName);
+            if (isDeadLetter)
+            {
+                this.Channel.QueueBindAsync(
+                        queue: queueName,
+                        exchange: $"exchange-{queueName}",
+                        routingKey: $"{queueName}-key"
+                    )
+                    .Wait();
+            }
+            this.Queues.Add(new KeyValuePair<string, bool>(queueName, isDeadLetter));
         }
     }
 
@@ -64,6 +92,19 @@ public abstract class CommonBase : ICommonBase
     {
         this.Channel?.CloseAsync();
         this.Connection?.CloseAsync();
+    }
+
+    private void CreateDeadLetterExchange()
+    {
+        if (!this.IsInQueue(this.DeadLetterExchange))
+        {
+            this.DeclareQueueIfNotDeclared(this.DeadLetterExchange, true);
+        }
+    }
+
+    private bool IsInQueue(string queueName)
+    {
+        return this.Queues.Where(q => q.Key == queueName).Count() > 0;
     }
 
     private async Task LoadQueues()
@@ -84,9 +125,14 @@ public abstract class CommonBase : ICommonBase
         {
             foreach (var queue in queues)
             {
-                if (queue.Name != null && !this.Queues.Contains(queue.Name))
+                if (queue.Name != null && !this.IsInQueue(queue.Name))
                 {
-                    this._queues.Add(queue.Name);
+                    this._queues.Add(
+                        new KeyValuePair<string, bool>(
+                            queue.Name,
+                            !(queue.Name == this.DeadLetterExchange)
+                        )
+                    );
                 }
             }
         }
@@ -98,16 +144,19 @@ public abstract class CommonBase : ICommonBase
         await this.LoadQueues();
     }
 
-	public async Task RemoveAllQueues()
-	{
-		await this.LoadQueues();
-		foreach (var queue in this.Queues)
-		{
-			await this.Channel.QueueDeleteAsync(queue);
-		}
-		this.Queues.Clear();
-		await this.LoadQueues();
-	}
+    public async Task RemoveAllQueues()
+    {
+        await this.LoadQueues();
+        foreach (var queue in this.Queues)
+        {
+            if (queue.Value)
+            {
+                await this.Channel.QueueDeleteAsync(queue.Key);
+            }
+        }
+        this.Queues.Clear();
+        await this.LoadQueues();
+    }
 
     #endregion // Methods
 
@@ -118,8 +167,9 @@ public abstract class CommonBase : ICommonBase
     protected abstract string AdminUser { get; }
     protected IChannel Channel => this._channel;
     protected IConnection Connection => this._connection;
+    protected string DeadLetterExchange => "dlx";
     protected abstract string HostName { get; }
-    public HashSet<string> Queues => this._queues;
+    public HashSet<KeyValuePair<string, bool>> Queues => this._queues;
 
     #endregion // Properties
 }
