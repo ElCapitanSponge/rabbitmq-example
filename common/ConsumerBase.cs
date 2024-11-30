@@ -15,9 +15,10 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 {
     #region Constructors
 
-    public ConsumerBase(List<string> queuesNames)
+    public ConsumerBase(string name, List<string> queuesNames)
         : base()
     {
+        this._name = name;
         this._specifiedQueues = queuesNames;
     }
 
@@ -25,6 +26,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 
     #region Fields
 
+    private string _name;
     private List<string> _specifiedQueues;
 
     #endregion // Fields
@@ -54,7 +56,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
                     )
                     {
                         Console.WriteLine(
-                            $" [{queueName}] Could not deserialise message: {message}"
+                            $"[{this.Name}][{queueName}] Could not deserialise message: {message}"
                         );
                         return Task.CompletedTask;
                     }
@@ -64,7 +66,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
                     if (messageType == null)
                     {
                         Console.WriteLine(
-                            $"[{queueName}] could not determine type for message data"
+                            $"[{this.Name}][{queueName}] could not determine type for message data"
                         );
                         return Task.CompletedTask;
                     }
@@ -77,16 +79,18 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
                     if (deserializedMessage == null)
                     {
                         Console.WriteLine(
-                            $" [{queueName}] Could not deserialise message: {decodedBaseMessage.Message}"
+                            $"[{this.Name}][{queueName}] Could not deserialise message: {decodedBaseMessage.Message}"
                         );
                         return Task.CompletedTask;
                     }
 
-                    Console.WriteLine($" [{queueName}] Received {deserializedMessage.ToString()}");
+                    Console.WriteLine(
+                        $"[{this.Name}][{queueName}] Received {deserializedMessage.ToString()}"
+                    );
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($" [{queueName}] Error: {ex.Message}");
+                    Console.Error.WriteLine($"[{this.Name}][{queueName}] Error: {ex.Message}");
                     this.Channel.BasicNackAsync(
                         deliveryTag: ea.DeliveryTag,
                         multiple: false,
@@ -98,7 +102,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 
             this.Channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer)
                 .Wait();
-            Console.WriteLine($" [{queueName}] Waiting for messages.");
+            Console.WriteLine($"[{this.Name}][{queueName}] Waiting for messages.");
         }
     }
 
@@ -106,6 +110,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 
     #region Properties
 
+    private string Name => this._name;
     public List<string> SpecifiedQueues => this._specifiedQueues;
 
     #endregion // Properties

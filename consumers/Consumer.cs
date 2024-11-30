@@ -6,8 +6,8 @@ public class Consumer : ConsumerBase
 {
     #region Constructors
 
-    public Consumer(List<string> queuesNames)
-        : base(queuesNames) { }
+    public Consumer(string name, List<string> queuesNames)
+        : base(name, queuesNames) { }
 
     #endregion // Constructors
 
