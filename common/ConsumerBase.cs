@@ -47,7 +47,11 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
                     StructuredMessage? decodedBaseMessage =
                         JsonSerializer.Deserialize<StructuredMessage>(message);
 
-                    if (decodedBaseMessage == null)
+                    if (
+                        decodedBaseMessage == null
+                        || decodedBaseMessage.Message == null
+                        || decodedBaseMessage.MessageType == null
+                    )
                     {
                         Console.WriteLine(
                             $" [{queueName}] Could not deserialise message: {message}"
@@ -55,9 +59,19 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
                         return Task.CompletedTask;
                     }
 
+                    Type? messageType = Type.GetType(decodedBaseMessage.MessageType);
+
+                    if (messageType == null)
+                    {
+                        Console.WriteLine(
+                            $"[{queueName}] could not determine type for message data"
+                        );
+                        return Task.CompletedTask;
+                    }
+
                     object? deserializedMessage = JsonSerializer.Deserialize(
                         decodedBaseMessage.Message,
-                        Type.GetType(decodedBaseMessage.MessageType)
+                        messageType
                     );
 
                     if (deserializedMessage == null)

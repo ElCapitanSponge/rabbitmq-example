@@ -28,5 +28,11 @@ public class ProviderController
         return "Simple Message Published";
     }
 
+    [HttpGet("LoadQueues")]
+    public HashSet<string> LoadQueues()
+    {
+        this._publisher.RefreshQueues().Wait();
+        return this._publisher.Queues.Where(q => !q.Value).Select(q => q.Key).ToHashSet();
+    }
     #endregion // Requests
 }
