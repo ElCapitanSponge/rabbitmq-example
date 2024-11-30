@@ -59,6 +59,11 @@ public abstract class CommonBase : ICommonBase
                     )
                     .Wait();
             }
+            else
+            {
+                this.Channel.ExchangeDeclareAsync(exchange: "messages", type: ExchangeType.Fanout)
+                    .Wait();
+            }
             IDictionary<string, object?>? args = null;
             if (!isDeadLetter)
             {
@@ -85,7 +90,16 @@ public abstract class CommonBase : ICommonBase
                     )
                     .Wait();
             }
-            this.Queues.Add(new KeyValuePair<string, bool>(queueName, isDeadLetter));
+            else
+            {
+                this.Channel.QueueBindAsync(
+                        queue: queueName,
+                        exchange: "messages",
+                        routingKey: queueName
+                    )
+                    .Wait();
+                this.Queues.Add(new KeyValuePair<string, bool>(queueName, isDeadLetter));
+            }
         }
     }
 

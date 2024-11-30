@@ -41,7 +41,7 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
         {
             this.DeclareQueueIfNotDeclared(queueName);
             this.Channel.BasicPublishAsync(
-                exchange: string.Empty,
+                exchange: "messages",
                 routingKey: queueName,
                 body: body
             );
