@@ -22,19 +22,20 @@ public class ManagementController
     #region Requests
 
     [HttpPut("CreateQueue")]
-    public bool CreateQueue(string queueName)
+    public Task<bool> CreateQueue(string queueName)
     {
         return this._management.CreateQueue(queueName);
     }
 
     [HttpPut("CreateQueues")]
-    public List<KeyValuePair<string, bool>> CreateQueues(List<string> queueNames)
+    public async Task<List<KeyValuePair<string, bool>>> CreateQueues(List<string> queueNames)
     {
         List<KeyValuePair<string, bool>> results = new List<KeyValuePair<string, bool>>();
         foreach (string queueName in queueNames)
         {
+            bool hidden = await this._management.CreateQueue(queueName);
             results.Add(
-                new KeyValuePair<string, bool>(queueName, this._management.CreateQueue(queueName))
+                new KeyValuePair<string, bool>(queueName, hidden)
             );
         }
         return results;
@@ -44,7 +45,7 @@ public class ManagementController
     public HashSet<string> LoadQueues()
     {
         this._management.RefreshQueues().Wait();
-        return this._management.Queues.Where(q => q.Value).Select(q => q.Key).ToHashSet();
+        return this._management.Queues.Where(q => !q.Value).Select(q => q.Key).ToHashSet();
     }
 
     [HttpDelete("DeleteAllQueues")]

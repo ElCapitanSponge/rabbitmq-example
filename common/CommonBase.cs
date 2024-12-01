@@ -7,8 +7,10 @@ namespace RabbitmqExample.Common;
 
 public interface ICommonBase
 {
-    public bool CreateQueue(string queueName);
+    public Task<bool> CreateQueue(string queueName);
     public void Dispose();
+    public IConnection GetConnection();
+    public IChannel GetChannel();
     public Task RefreshQueues();
     public Task RemoveAllQueues();
     public HashSet<KeyValuePair<string, bool>> Queues { get; }
@@ -23,8 +25,16 @@ public abstract class CommonBase : ICommonBase
         var factory = new ConnectionFactory { HostName = this.HostName };
         this._connection = factory.CreateConnectionAsync().Result;
         this._channel = this.Connection.CreateChannelAsync().Result;
+        this.DeclareExchanges().Wait();
         this.LoadQueues().Wait();
-        this.CreateDeadLetterExchange();
+        this.CreateDeadLetterExchange().Wait();
+    }
+
+    public CommonBase(IChannel channel, IConnection connection)
+    {
+        this._channel = channel;
+        this._connection = connection;
+        this.LoadQueues().Wait();
     }
 
     #endregion // Constructors
@@ -40,22 +50,29 @@ public abstract class CommonBase : ICommonBase
 
     #region Methods
 
-    public bool CreateQueue(string queueName)
+    public async Task<bool> CreateQueue(string queueName)
     {
-        this.DeclareQueueIfNotDeclared(queueName);
+        await this.DeclareQueueIfNotDeclared(queueName);
         bool exists = this.IsInQueue(queueName);
         return exists;
     }
 
-    protected void DeclareQueueIfNotDeclared(string queueName, bool isDeadLetter = false)
+    private async Task DeclareExchanges()
+    {
+        await this.Channel.ExchangeDeclareAsync(
+            exchange: $"exchange_{this.DeadLetterExchange}",
+            type: ExchangeType.Direct
+        );
+        await this.Channel.ExchangeDeclareAsync(
+            exchange: this.MessageExchange,
+            type: this.MessageExchangeType
+        );
+    }
+
+    protected async Task DeclareQueueIfNotDeclared(string queueName, bool isDeadLetter = false)
     {
         if (!this.IsInQueue(queueName))
         {
-            this.Channel.ExchangeDeclareAsync(
-                    exchange: $"exchange-{queueName}",
-                    type: ExchangeType.Direct
-                )
-                .Wait();
             IDictionary<string, object?>? args = null;
             if (!isDeadLetter)
             {
@@ -65,20 +82,29 @@ public abstract class CommonBase : ICommonBase
                     { "x-dead-letter-routing-key", $"{this.DeadLetterExchange}-key" },
                 };
             }
-            this.Channel.QueueDeclareAsync(
+            await this.Channel.QueueDeclareAsync(
                     queue: queueName,
                     durable: false,
                     exclusive: false,
                     autoDelete: false,
                     arguments: args
-                )
-                .Wait();
-            this.Channel.QueueBindAsync(
+                );
+            if (isDeadLetter)
+            {
+                await this.Channel.QueueBindAsync(
                     queue: queueName,
-                    exchange: $"exchange-{queueName}",
-                    routingKey: $"{queueName}-key"
-                )
-                .Wait();
+                    exchange: $"exchange_{this.DeadLetterExchange}",
+                    routingKey: $"{this.DeadLetterExchange}-key"
+                );
+            }
+            else
+            {
+                await this.Channel.QueueBindAsync(
+                    queue: queueName,
+                    exchange: this.MessageExchange,
+                    routingKey: (this.MessageExchangeType == ExchangeType.Direct) ? queueName : string.Empty
+                );
+            }
             this.Queues.Add(new KeyValuePair<string, bool>(queueName, isDeadLetter));
         }
     }
@@ -89,13 +115,17 @@ public abstract class CommonBase : ICommonBase
         this.Connection?.CloseAsync();
     }
 
-    private void CreateDeadLetterExchange()
+    private async Task CreateDeadLetterExchange()
     {
         if (!this.IsInQueue(this.DeadLetterExchange))
         {
-            this.DeclareQueueIfNotDeclared(this.DeadLetterExchange, true);
+            await this.DeclareQueueIfNotDeclared(this.DeadLetterExchange, true);
         }
     }
+
+    public IChannel GetChannel() => this.Channel;
+
+    public IConnection GetConnection() => this.Connection;
 
     private bool IsInQueue(string queueName)
     {
@@ -125,7 +155,7 @@ public abstract class CommonBase : ICommonBase
                     this._queues.Add(
                         new KeyValuePair<string, bool>(
                             queue.Name,
-                            !(queue.Name == this.DeadLetterExchange)
+                            queue.Name == this.DeadLetterExchange
                         )
                     );
                 }
@@ -164,6 +194,8 @@ public abstract class CommonBase : ICommonBase
     protected IConnection Connection => this._connection;
     protected string DeadLetterExchange => "dlx";
     protected abstract string HostName { get; }
+    protected string MessageExchange => $"{this.MessageExchangeType}_exchange";
+    protected string MessageExchangeType => ExchangeType.Direct;
     public HashSet<KeyValuePair<string, bool>> Queues => this._queues;
 
     #endregion // Properties

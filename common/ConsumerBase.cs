@@ -7,7 +7,7 @@ namespace RabbitmqExample.Common;
 
 public interface IConsumerBase
 {
-    public void StartConsuming();
+    public Task StartConsuming();
     public List<string> SpecifiedQueues { get; }
 }
 
@@ -15,11 +15,17 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 {
     #region Constructors
 
-    public ConsumerBase(string name, List<string> queuesNames)
+    public ConsumerBase(string name, List<string> queueNames)
         : base()
     {
         this._name = name;
-        this._specifiedQueues = queuesNames;
+        this._specifiedQueues = queueNames;
+    }
+
+    public ConsumerBase(string name, List<string> queueNames, IChannel channel, IConnection connection) : base(channel, connection)
+    {
+        this._name = name;
+        this._specifiedQueues = queueNames;
     }
 
     #endregion // Constructors
@@ -33,11 +39,11 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
 
     #region Methods
 
-    public void StartConsuming()
+    public async Task StartConsuming()
     {
         foreach (string queueName in this.SpecifiedQueues)
         {
-            this.DeclareQueueIfNotDeclared(queueName);
+            await this.DeclareQueueIfNotDeclared(queueName);
             AsyncEventingBasicConsumer consumer = new AsyncEventingBasicConsumer(this.Channel);
             consumer.ReceivedAsync += (model, ea) =>
             {
@@ -87,6 +93,8 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
                     Console.WriteLine(
                         $"[{this.Name}][{queueName}] Received {deserializedMessage.ToString()}"
                     );
+                    this.Channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
+                    return Task.CompletedTask;
                 }
                 catch (Exception ex)
                 {
@@ -96,12 +104,13 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
                         multiple: false,
                         requeue: false
                     );
+                    return Task.FromException(ex);
                 }
-                return Task.CompletedTask;
             };
 
-            this.Channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer)
-                .Wait();
+            await this.Channel.BasicQosAsync(0, 1, false);
+
+            await this.Channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
             Console.WriteLine($"[{this.Name}][{queueName}] Waiting for messages.");
         }
     }

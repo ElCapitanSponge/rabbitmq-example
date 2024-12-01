@@ -6,8 +6,8 @@ namespace RabbitmqExample.Common;
 
 public interface IPublisherBase
 {
-    public void SendMessage(IEnumerable<string> queueNames, string message);
-    public void SendMessage<T>(IEnumerable<string> queueNames, T message);
+    public Task SendMessage(IEnumerable<string> queueNames, string message);
+    public Task SendMessage<T>(IEnumerable<string> queueNames, T message);
 }
 
 public abstract class PublisherBase : CommonBase, IPublisherBase
@@ -21,12 +21,12 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
 
     #region Methods
 
-    public void SendMessage(IEnumerable<string> queueNames, string message)
+    public async Task SendMessage(IEnumerable<string> queueNames, string message)
     {
-        this.SendMessage<string>(queueNames, message);
+        await this.SendMessage<string>(queueNames, message);
     }
 
-    public void SendMessage<T>(IEnumerable<string> queueNames, T message)
+    public async Task SendMessage<T>(IEnumerable<string> queueNames, T message)
     {
         string serialisedMessage = JsonSerializer.Serialize(message);
         StructuredMessage structuredMessage = new StructuredMessage
@@ -39,10 +39,10 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
 
         foreach (string queueName in queueNames)
         {
-            this.DeclareQueueIfNotDeclared(queueName);
-            this.Channel.BasicPublishAsync(
-                exchange: $"exchange-{queueName}",
-                routingKey: $"{queueName}-key",
+            await this.DeclareQueueIfNotDeclared(queueName);
+            await this.Channel.BasicPublishAsync(
+                exchange: this.MessageExchange,
+                routingKey: (this.MessageExchangeType == ExchangeType.Direct) ? queueName : string.Empty,
                 body: body
             );
 
