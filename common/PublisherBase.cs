@@ -41,14 +41,14 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
         {
             this.DeclareQueueIfNotDeclared(queueName);
             this.Channel.BasicPublishAsync(
-                exchange: "messages",
-                routingKey: queueName,
+                exchange: $"exchange-{queueName}",
+                routingKey: $"{queueName}-key",
                 body: body
             );
 
-            Console.WriteLine($" [{queueName}] Sent structured message: {message}");
+            Console.WriteLine($"[{queueName}] Sent structured message: {message}");
             Console.WriteLine(
-                $" [{queueName}] Sent message: {structuredMessage.MessageType} ~ {structuredMessage.Message}"
+                $"[{queueName}] Sent message: {structuredMessage.MessageType} ~ {structuredMessage.Message}"
             );
         }
     }

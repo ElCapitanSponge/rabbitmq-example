@@ -51,19 +51,11 @@ public abstract class CommonBase : ICommonBase
     {
         if (!this.IsInQueue(queueName))
         {
-            if (isDeadLetter)
-            {
-                this.Channel.ExchangeDeclareAsync(
-                        exchange: $"exchange-{queueName}",
-                        type: ExchangeType.Direct
-                    )
-                    .Wait();
-            }
-            else
-            {
-                this.Channel.ExchangeDeclareAsync(exchange: "messages", type: ExchangeType.Fanout)
-                    .Wait();
-            }
+            this.Channel.ExchangeDeclareAsync(
+                    exchange: $"exchange-{queueName}",
+                    type: ExchangeType.Direct
+                )
+                .Wait();
             IDictionary<string, object?>? args = null;
             if (!isDeadLetter)
             {
@@ -81,25 +73,13 @@ public abstract class CommonBase : ICommonBase
                     arguments: args
                 )
                 .Wait();
-            if (isDeadLetter)
-            {
-                this.Channel.QueueBindAsync(
-                        queue: queueName,
-                        exchange: $"exchange-{queueName}",
-                        routingKey: $"{queueName}-key"
-                    )
-                    .Wait();
-            }
-            else
-            {
-                this.Channel.QueueBindAsync(
-                        queue: queueName,
-                        exchange: "messages",
-                        routingKey: queueName
-                    )
-                    .Wait();
-                this.Queues.Add(new KeyValuePair<string, bool>(queueName, isDeadLetter));
-            }
+            this.Channel.QueueBindAsync(
+                    queue: queueName,
+                    exchange: $"exchange-{queueName}",
+                    routingKey: $"{queueName}-key"
+                )
+                .Wait();
+            this.Queues.Add(new KeyValuePair<string, bool>(queueName, isDeadLetter));
         }
     }
 

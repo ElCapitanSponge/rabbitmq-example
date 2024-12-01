@@ -44,7 +44,7 @@ public class ManagementController
     public HashSet<string> LoadQueues()
     {
         this._management.RefreshQueues().Wait();
-        return this._management.Queues.Where(q => !q.Value).Select(q => q.Key).ToHashSet();
+        return this._management.Queues.Where(q => q.Value).Select(q => q.Key).ToHashSet();
     }
 
     [HttpDelete("DeleteAllQueues")]
