@@ -108,7 +108,7 @@ public abstract class ConsumerBase : CommonBase, IConsumerBase
                 }
             };
 
-            await this.Channel.BasicQosAsync(0, 1, false);
+            //await this.Channel.BasicQosAsync(0, 1, false);
 
             await this.Channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
             Console.WriteLine($"[{this.Name}][{queueName}] Waiting for messages.");

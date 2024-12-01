@@ -40,16 +40,27 @@ public abstract class PublisherBase : CommonBase, IPublisherBase
         foreach (string queueName in queueNames)
         {
             await this.DeclareQueueIfNotDeclared(queueName);
-            await this.Channel.BasicPublishAsync(
-                exchange: this.MessageExchange,
-                routingKey: (this.MessageExchangeType == ExchangeType.Direct) ? queueName : string.Empty,
-                body: body
-            );
+            int queueConnections = await this.ConnectionsToQueue(queueName);
+            if (queueConnections > 0)
+            {
+                for (int i = 0; i < queueConnections; i++)
+                {
+                    await this.Channel.BasicPublishAsync(
+                        exchange: $"{queueName}_{this.MessageExchange}",
+                        routingKey: (this.MessageExchangeType == ExchangeType.Direct) ? queueName : string.Empty,
+                        body: body
+                    );
 
-            Console.WriteLine($"[{queueName}] Sent structured message: {message}");
-            Console.WriteLine(
-                $"[{queueName}] Sent message: {structuredMessage.MessageType} ~ {structuredMessage.Message}"
-            );
+                    Console.WriteLine($"[{i}][{queueName}] Sent structured message: {message}");
+                    Console.WriteLine(
+                        $"[{i}][{queueName}] Sent message: {structuredMessage.MessageType} ~ {structuredMessage.Message}"
+                    );
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Unable to determine connections to the queue [{queueName}]");
+            }
         }
     }
 
