@@ -1,5 +1,3 @@
-using AspNetCore.Swagger.Themes;
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -14,7 +12,7 @@ app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader(
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(ModernStyle.Dark);
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
